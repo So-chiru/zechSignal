@@ -1,0 +1,9 @@
+{
+  "name": "zechSignal",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^7.2.3"
+  }
+}

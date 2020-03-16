@@ -1,7 +1,10 @@
 const NETWORKING = require('./networking/enums')
 
 const server = require('./networking/server')
+const metadata = require('./networking/metadata')
 const peerManager = require('./networking/peer')
+
+const buffer = require('./utils/buffer')
 
 server.wsEvent.on('open', ws => {
   console.log('open', ws.id)
@@ -50,7 +53,7 @@ server.wsCommand.on(NETWORKING.createPeerOffer, (ws, data) => {
 })
 
 server.wsCommand.on(NETWORKING.answerPeerOffer, (ws, data) => {
-  if (!data.answer || !data.to || !data.answer_peer) {  
+  if (!data.answer || !data.to || !data.answer_peer) {
     ws.sendError('Invalid answer data.')
     return
   }
@@ -85,4 +88,19 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
   }
 
   toPeer.ws.sendCommand(NETWORKING.iceTransport, data)
+})
+
+server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
+  if (!data || data.length !== 32) {
+    ws.sendError('Invalid metadata request.')
+    return
+  }
+
+  let id = buffer.hexStringConvert(data)
+  let meta = metadata.find(id)
+
+  if (!meta) {
+    ws.sendBinaryData(NETWORKING.RequestMetadata, data)
+    return
+  }
 })

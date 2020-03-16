@@ -2,7 +2,7 @@ const WebSocket = require('ws')
 
 const uuid = require('../utils/uuid')
 const eventBus = require('../utils/eventBus')
-const bytes = require('../utils/bytes')
+const buffer = require('../utils/buffer')
 const NETWORKING = require('./enums')
 
 const wss = new WebSocket.Server({
@@ -34,7 +34,16 @@ wss.on('connection', ws => {
     ws.send(makeCommand(cmd, data))
   }
 
-  ws.sendError = (data) => {
+  ws.sendBinary = binary => {
+    ws.send(buffer.makeBytes(1, binary))
+  }
+
+  ws.sendBinaryData = (b1, b2) => {
+    let result = buffer.concatBuffer(buffer.makeBytes(1, b1), b2)
+    ws.send(result)
+  }
+
+  ws.sendError = data => {
     ws.send(makeCommand(NETWORKING.ERROR, data))
   }
 
@@ -62,14 +71,12 @@ wss.on('connection', ws => {
     }
 
     if (typeof data === 'object' && data[0] === NETWORKING.PING) {
-      ws.send(bytes.makeBytes(1, NETWORKING.PONG))
-
+      ws.send(buffer.makeBytes(1, NETWORKING.PONG))
       return
     }
 
     if (typeof data === 'object' && data[0]) {
-      wsCommand.emit(data[0], ws)
-
+      wsCommand.emit(data[0], ws, data.slice(1, data.length))
       return
     }
 
@@ -80,6 +87,5 @@ wss.on('connection', ws => {
     wsEvent.emit('close', ws)
   })
 })
-
 
 module.exports = { ...wss, wsEvent, wsCommand }

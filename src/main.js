@@ -16,9 +16,8 @@ server.wsEvent.on('message', (ws, data) => {
   console.log('message', ws.id, data)
 })
 
-server.wsEvent.on('close', ws => {
-  console.log('close', ws.id)
-  peerManager.findPeer(ws.id).remove()
+server.wsEvent.on('close', id => {
+  peerManager.findPeer(id).remove()
 })
 
 server.wsCommand.on(NETWORKING.GetUUID, ws => {
@@ -47,6 +46,8 @@ server.wsCommand.on(NETWORKING.createPeerOffer, (ws, data) => {
   let toPeer = peerManager.findPeer(data.to)
 
   if (!toPeer) {
+    console.log(data)
+
     ws.sendError(`Couldn't find the peer ${data.to}.`)
     return
   }
@@ -77,10 +78,8 @@ server.wsCommand.on(NETWORKING.answerPeerOffer, (ws, data) => {
 server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
   data = buffer.BSONtoObject(data)
 
-  if (!data.candidate || !data.to) {
-    console.log(data)
-
-    ws.sendError('Invalid answer data.')
+  if (!data.c || !data.to) {
+    ws.sendError('Invalid ICE data.')
     return
   }
 

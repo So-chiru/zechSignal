@@ -87,8 +87,8 @@ wss.on('connection', ws => {
     wsEvent.emit('message', ws, data)
   })
 
-  ws.on('close', () => {
-    wsEvent.emit('close', ws)
+  ws.on('close', (ev) => {
+    wsEvent.emit('close', ws.id)
   })
 })
 

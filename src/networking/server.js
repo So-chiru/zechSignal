@@ -34,6 +34,10 @@ wss.on('connection', ws => {
     ws.send(makeCommand(cmd, data))
   }
 
+  ws.sendBSON = (ev, data) => {
+    ws.sendBinaryData(ev, buffer.objectToBSON(data))
+  }
+
   ws.sendBinary = binary => {
     ws.send(buffer.makeBytes(1, binary))
   }

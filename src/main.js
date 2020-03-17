@@ -35,12 +35,14 @@ server.wsCommand.on(NETWORKING.GetPeerLists, (ws, data) => {
 })
 
 server.wsCommand.on(NETWORKING.createPeerOffer, (ws, data) => {
+  data = buffer.BSONtoObject(data)
+
   if (!data.offer || !data.to) {
     ws.sendError('Invalid offer data.')
     return
   }
 
-  data.from = ws.id
+  data.fi = ws.id
 
   let toPeer = peerManager.findPeer(data.to)
 
@@ -49,16 +51,18 @@ server.wsCommand.on(NETWORKING.createPeerOffer, (ws, data) => {
     return
   }
 
-  toPeer.ws.sendCommand(NETWORKING.createPeerOffer, data)
+  toPeer.ws.sendBSON(NETWORKING.createPeerOffer, data)
 })
 
 server.wsCommand.on(NETWORKING.answerPeerOffer, (ws, data) => {
+  data = buffer.BSONtoObject(data)
+
   if (!data.answer || !data.to || !data.answer_peer) {
     ws.sendError('Invalid answer data.')
     return
   }
 
-  data.from = ws.id
+  data.fi = ws.id
 
   let toPeer = peerManager.findPeer(data.to)
 
@@ -67,10 +71,12 @@ server.wsCommand.on(NETWORKING.answerPeerOffer, (ws, data) => {
     return
   }
 
-  toPeer.ws.sendCommand(NETWORKING.answerPeerOffer, data)
+  toPeer.ws.sendBSON(NETWORKING.answerPeerOffer, data)
 })
 
 server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
+  data = buffer.BSONtoObject(data)
+
   if (!data.candidate || !data.to) {
     console.log(data)
 
@@ -78,7 +84,7 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
     return
   }
 
-  data.from = ws.id
+  data.fi = ws.id
 
   let toPeer = peerManager.findPeer(data.to)
 
@@ -87,7 +93,7 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
     return
   }
 
-  toPeer.ws.sendCommand(NETWORKING.iceTransport, data)
+  toPeer.ws.sendBSON(NETWORKING.iceTransport, data)
 })
 
 server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
@@ -100,7 +106,7 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
   let meta = metadata.find(id)
 
   if (!meta) {
-    ws.sendBinaryData(NETWORKING.RequestMetadata, data)
+    ws.sendBinaryData(NETWORKING.NoMetadata, data)
     return
   }
 })

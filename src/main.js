@@ -21,7 +21,10 @@ server.wsEvent.on('close', id => {
 })
 
 server.wsCommand.on(NETWORKING.GetUUID, ws => {
-  ws.sendCommand(NETWORKING.GetUUID, ws.id)
+  ws.sendBinaryData(
+    NETWORKING.GetUUID,
+    buffer.stringHexConvert(ws.id.replace(/-/g, ''))
+  )
 })
 
 server.wsCommand.on(NETWORKING.GetPeerLists, (ws, data) => {

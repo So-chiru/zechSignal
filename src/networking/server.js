@@ -43,6 +43,14 @@ wss.on('connection', ws => {
   }
 
   ws.sendBinaryData = (b1, b2) => {
+    if (!(b2 instanceof ArrayBuffer || b2 instanceof Buffer)) {
+      throw new Error(
+        `b2 argument needs ArrayBuffer. Not ${
+          typeof b2 === 'undefined' ? 'null' : b2.constructor.name
+        }.`
+      )
+    }
+
     let result = buffer.concatBuffer(buffer.makeBytes(1, b1), b2)
     ws.send(result)
   }
@@ -87,7 +95,7 @@ wss.on('connection', ws => {
     wsEvent.emit('message', ws, data)
   })
 
-  ws.on('close', (ev) => {
+  ws.on('close', ev => {
     wsEvent.emit('close', ws.id)
   })
 })

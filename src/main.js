@@ -99,7 +99,7 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
 })
 
 server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
-  if (!data || data.length !== 32) {
+  if (!data || data.length !== 16) {
     ws.sendError('Invalid metadata request.')
     return
   }

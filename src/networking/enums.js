@@ -8,9 +8,12 @@ module.exports = {
   GetUUID: 0xA0,
   RequestMetadata: 0xA1,
   NoMetadata: 0xA2,
+  uploadMetadata: 0xA3,
   createPeerOffer: 0xC1,
   answerPeerOffer: 0xC2,
   iceTransport: 0xC3,
   RTCRequestBlock: 0xD0, // RTC Command
   RTCAnswerBlock: 0xD1,
+  RTCCheckBlock: 0xD2,
+  RTCCheckNeedBlock: 0xD3,
 }

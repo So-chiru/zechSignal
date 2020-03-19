@@ -99,7 +99,7 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
 })
 
 server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
-  if (!data || data.length !== 16) {
+  if (!data || data.length !== 32) {
     ws.sendError('Invalid metadata request.')
     return
   }
@@ -111,4 +111,15 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
     ws.sendBinaryData(NETWORKING.NoMetadata, data)
     return
   }
+})
+
+server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
+  data = buffer.BSONtoObject(data)
+
+  if (!data || !data.url || !data.hash || !data.blocks) {
+    ws.sendError('Invalid upload request.')
+    return
+  }
+
+  new metadata.fileMetadata(data.url, data.hash, data.blocks)
 })

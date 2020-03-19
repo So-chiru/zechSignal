@@ -88,7 +88,11 @@ wss.on('connection', ws => {
     }
 
     if (typeof data === 'object' && data[0]) {
-      wsCommand.emit(data[0], ws, data.slice(1, data.length))
+      try {
+        wsCommand.emit(data[0], ws, data.slice(1, data.length))
+      } catch (e) {
+        console.log(`Failed to run command ${data[0]} : ${e.message}`)
+      }
       return
     }
 

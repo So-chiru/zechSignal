@@ -4,6 +4,8 @@ const server = require('./networking/server')
 const metadata = require('./networking/metadata')
 const peerManager = require('./networking/peer')
 
+const sha3 = require('js-sha3')
+
 const buffer = require('./utils/buffer')
 
 server.wsEvent.on('open', ws => {
@@ -111,6 +113,13 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
     ws.sendBinaryData(NETWORKING.NoMetadata, data)
     return
   }
+
+  ws.sendBSON(NETWORKING.RequestMetadata, {
+    urlh: meta.urlHash,
+    h: meta.hash,
+    blk: meta.blocks,
+    peers: meta.peers
+  })
 })
 
 server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
@@ -121,5 +130,10 @@ server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
     return
   }
 
-  new metadata.fileMetadata(data.url, data.hash, data.blocks)
+  if (metadata.find(sha3.sha3_256(data.url))) {
+    return
+  }
+
+  let file = new metadata.fileMetadata(data.url, data.hash, data.blocks)
+  file.addPeer(peerManager.findPeer(ws.id))
 })

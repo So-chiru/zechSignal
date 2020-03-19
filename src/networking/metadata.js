@@ -3,25 +3,47 @@ const sha3 = require('js-sha3')
 let hashStorage = {}
 
 class fileMetadata {
-  constructor(url) {
+  constructor (url, hash, blocks) {
     this.url = url
     this.urlHash = sha3.sha3_256(url)
 
-    this.blocks = []
+    this.hash = hash
+    this.blocks = blocks
 
-    this.hashStorage[this.urlHash] = this
+    this.peers = []
+
+    hashStorage[this.urlHash] = this
   }
 
-  getBlock(index) {
+  addPeer (peer) {
+    this.peers.push(peer)
+  }
+
+  getActivePeer () {
+    let active = []
+
+    let len = this.peers.length
+    for (var i = 0; i < len; i++) {
+      let peer = this.peers[i]
+
+      if (peer.ws) {
+        active.push(peer)
+      }
+    }
+
+    return active
+  }
+
+  getBlock (index) {
     return this.blocks[index]
   }
 
-  setBlock(index, hash) {
+  setBlock (index, hash) {
     this.blocks[index] = hash
   }
 }
 
-const find = (id) => {
+const find = id => {
   return hashStorage[id]
 }
 

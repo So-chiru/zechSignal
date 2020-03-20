@@ -100,6 +100,7 @@ wss.on('connection', ws => {
   })
 
   ws.on('close', ev => {
+    ws.closed = true
     wsEvent.emit('close', ws.id)
   })
 })

@@ -1,5 +1,7 @@
 const sha3 = require('js-sha3')
 
+const eventBus = require('../utils/eventBus')
+
 let hashStorage = {}
 
 class fileMetadata {
@@ -12,11 +14,23 @@ class fileMetadata {
 
     this.peers = []
 
+    this.bus = new eventBus()
+    this.bus.on('peer', () => {})
+
     hashStorage[this.urlHash] = this
   }
 
   addPeer (peer) {
+    this.bus.emit('peer', peer)
     this.peers.push(peer)
+  }
+
+  subscribePeer (cb) {
+    return this.bus.on('peer', cb)
+  }
+
+  unsubscribePeer (id) {
+    return this.bus.off('peer', id)
   }
 
   getActivePeer () {

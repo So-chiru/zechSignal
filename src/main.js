@@ -6,6 +6,7 @@ const peerManager = require('./networking/peer')
 
 const sha3 = require('js-sha3')
 
+const observer = require('./utils/observer')
 const buffer = require('./utils/buffer')
 
 server.wsEvent.on('open', ws => {
@@ -50,9 +51,9 @@ server.wsCommand.on(NETWORKING.createPeerOffer, (ws, data) => {
 
   let toPeer = peerManager.findPeer(data.to)
 
-  if (!toPeer) {
-    console.log(data)
+  console.log('createPeerOffer', data.fi, data.to)
 
+  if (!toPeer) {
     ws.sendError(`Couldn't find the peer ${data.to}.`)
     return
   }
@@ -107,19 +108,67 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
   }
 
   let id = buffer.hexStringConvert(data)
-  let meta = metadata.find(id)
 
-  if (!meta) {
-    ws.sendBinaryData(NETWORKING.NoMetadata, data)
+  console.log('RequestMetadata', id)
+
+  observer(() => {
+    return metadata.find(id)
+  }, 2000)
+    .then(meta => {
+      console.log('RequestMetadata', 'found', meta.urlHash)
+
+      ws.sendBSON(NETWORKING.RequestMetadata, {
+        urlh: meta.urlHash,
+        h: meta.hash,
+        blk: meta.blocks,
+        peers: peerManager.activePeerID(meta.peers)
+      })
+    })
+    .catch(() => {
+      ws.sendBinaryData(NETWORKING.NoMetadata, data)
+    })
+})
+
+server.wsCommand.on(NETWORKING.SubscribePeerWait, (ws, data) => {
+  if (!data || data.length !== 32) {
+    ws.sendError('Invalid subscribe request.')
     return
   }
 
-  ws.sendBSON(NETWORKING.RequestMetadata, {
-    urlh: meta.urlHash,
-    h: meta.hash,
-    blk: meta.blocks,
-    peers: meta.peers
-  })
+  let id = buffer.hexStringConvert(data)
+
+  observer(() => {
+    return metadata.find(id)
+  }, 4000)
+    .then(meta => {
+      if (!ws.subscribes) {
+        ws.subscribes = {}
+      }
+
+      ws.subscribes[id] = meta.subscribePeer(peer => {
+        ws.sendBinaryData(NETWORKING.PeerFound, id, peer.id)
+      })
+    })
+    .catch(e => {
+      return false
+    })
+})
+
+server.wsCommand.on(NETWORKING.UnsubscribePeerWait, (ws, data) => {
+  if (!data || data.length !== 32) {
+    ws.sendError('Invalid metadata request.')
+    return
+  }
+
+  let id = buffer.hexStringConvert(data)
+  let meta = metadata.find(id)
+
+  if (!meta || !ws.subscribes || !ws.subscribes[id]) {
+    ws.sendError('Invalid unsubscribe request.')
+    return
+  }
+
+  meta.unsubscribePeer(ws.subscribes[id])
 })
 
 server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
@@ -129,6 +178,8 @@ server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
     ws.sendError('Invalid upload request.')
     return
   }
+
+  console.log(`uploadMetadata`, sha3.sha3_256(data.url))
 
   if (metadata.find(sha3.sha3_256(data.url))) {
     return

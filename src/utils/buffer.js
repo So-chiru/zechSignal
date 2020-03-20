@@ -45,7 +45,8 @@ const hexStringConvert = bytes => {
 
   let len = bytes.length
   for (var i = 0; i < len; i++) {
-    str += bytes[i].toString(16)
+    let s = bytes[i].toString(16)
+    str += s.length < 2 ? '0' + s : s
   }
 
   return str
@@ -74,7 +75,12 @@ const concatBuffer = (...bufs) => {
   return result.buffer
 }
 
+const decode = buffer => {
+  return String.fromCharCode(...buffer)
+}
+
 module.exports = {
+  decode,
   makeBytes,
   stringHexConvert,
   hexStringConvert,

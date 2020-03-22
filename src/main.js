@@ -102,14 +102,21 @@ server.wsCommand.on(NETWORKING.iceTransport, (ws, data) => {
 })
 
 server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
-  if (!data || data.length !== 32) {
+  if (!data || (data.length !== 33 && data.length !== 32)) {
     ws.sendError('Invalid metadata request.')
     return
   }
 
-  let id = buffer.hexStringConvert(data)
+  let idslice = data.slice(0, 32)
+  let id = buffer.hexStringConvert(idslice)
 
   console.log('RequestMetadata', id)
+
+  let find = metadata.find(id)
+  if (data.length === 33 && (!find || (find && !find.getActivePeer().length))) {
+    ws.sendBinaryData(NETWORKING.NoMetadata, idslice)
+    return
+  }
 
   observer(() => {
     return metadata.find(id)
@@ -117,7 +124,7 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
     .then(meta => {
       console.log('RequestMetadata', 'found', meta.urlHash)
 
-      ws.sendBSON(NETWORKING.RequestMetadata, {
+      ws.sendBSON(NETWORKING.SendMetadata, {
         urlh: meta.urlHash,
         h: meta.hash,
         blk: meta.blocks,
@@ -125,50 +132,8 @@ server.wsCommand.on(NETWORKING.RequestMetadata, (ws, data) => {
       })
     })
     .catch(() => {
-      ws.sendBinaryData(NETWORKING.NoMetadata, data)
+      ws.sendBinaryData(NETWORKING.NoMetadata, idslice)
     })
-})
-
-server.wsCommand.on(NETWORKING.SubscribePeerWait, (ws, data) => {
-  if (!data || data.length !== 32) {
-    ws.sendError('Invalid subscribe request.')
-    return
-  }
-
-  let id = buffer.hexStringConvert(data)
-
-  observer(() => {
-    return metadata.find(id)
-  }, 4000)
-    .then(meta => {
-      if (!ws.subscribes) {
-        ws.subscribes = {}
-      }
-
-      ws.subscribes[id] = meta.subscribePeer(peer => {
-        ws.sendBinaryData(NETWORKING.PeerFound, id, peer.id)
-      })
-    })
-    .catch(e => {
-      return false
-    })
-})
-
-server.wsCommand.on(NETWORKING.UnsubscribePeerWait, (ws, data) => {
-  if (!data || data.length !== 32) {
-    ws.sendError('Invalid metadata request.')
-    return
-  }
-
-  let id = buffer.hexStringConvert(data)
-  let meta = metadata.find(id)
-
-  if (!meta || !ws.subscribes || !ws.subscribes[id]) {
-    ws.sendError('Invalid unsubscribe request.')
-    return
-  }
-
-  meta.unsubscribePeer(ws.subscribes[id])
 })
 
 server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
@@ -187,4 +152,22 @@ server.wsCommand.on(NETWORKING.uploadMetadata, (ws, data) => {
 
   let file = new metadata.fileMetadata(data.url, data.hash, data.blocks)
   file.addPeer(peerManager.findPeer(ws.id))
+})
+
+server.wsCommand.on(NETWORKING.notifyBlockDone, (ws, data) => {
+  data = buffer.hexStringConvert(data)
+
+  if (!data) {
+    ws.sendError('Invalid notifyBlock request.')
+    return
+  }
+
+  console.log(`notifyBlockDone`, data)
+
+  let found = metadata.find(data)
+  if (!found) {
+    return
+  }
+
+  found.addPeer(peerManager.findPeer(ws.id))
 })

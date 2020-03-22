@@ -25,14 +25,6 @@ class fileMetadata {
     this.peers.push(peer)
   }
 
-  subscribePeer (cb) {
-    return this.bus.on('peer', cb)
-  }
-
-  unsubscribePeer (id) {
-    return this.bus.off('peer', id)
-  }
-
   getActivePeer () {
     let active = []
 
